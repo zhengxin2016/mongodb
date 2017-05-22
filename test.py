@@ -1,84 +1,125 @@
 #!/usr/bin/env python3
 
 import os
+import random
 import pandas as pd
 import numpy as np
 import xlrd
 from pymongo import MongoClient
 
-from fun import clean_str
+import fun
 
 #读取excel
-question = []
-answer = []
-intention = []
-super_intention = []
-equal_question = []
-business = []
+D = {'question':[],
+        'answer':[],
+        'business':[],
+        'intention':[],
+        'super_intention':[],
+        'equal_questions':[]}
 
-file_path = r'./data.xlsx'
-book = xlrd.open_workbook(file_path)
-for sheet in book.sheets():
-    df = pd.read_excel('./data.xlsx', sheet.name)
-    if sheet.name != 'Sheet1':
-        for i in df['问题']:
-            question.append(str(i))
-        for i in df['回答']:
-            answer.append(str(i))
-        for i in df['意图']:
-            intention.append(str(i))
-        for i in df['上级意图']:
-            super_intention.append(str(i))
-        for i in df['等价描述']:
-            equal_question.append(str(i))
-        for i in df['业务']:
-            business.append(str(i))
+fun.read_excel(D)
 
-#写入mongodb
+#clean_str
+#标点修正，等价描述修正
+i = 0
+while i < len(D['question']):
+    for r in D.values():
+        r[i] = fun.clean_str(r[i])
+    if D['answer'][i] != 'nan':
+        D['answer'][i] = fun.proc_punctuation(D['answer'][i]) 
+    #修正等价描述格式
+    D['equal_questions'][i] = D['equal_questions'][i].replace(' ', '')
+    D['equal_questions'][i] = D['equal_questions'][i].replace('//', '/')
+    if D['equal_questions'][i][-1] == '/':
+        D['equal_questions'][i] = D['equal_questions'][i][:-1]
+    if D['equal_questions'][i][0] == '/':
+        D['equal_questions'][i] = D['equal_questions'][i][:-1]
+    i += 1
+
+#write to data.txt
+fun.data_xlsx2txt(D)
+
+#生成Qs_A[]
+Qs_A = fun.generate_Qs_A(D)
+
+#按对话切分列表
+#Qs_A[] => Q_A[]
+#[{1},{2},{'nan'},{3}] => [[{1},{2}], [{3}]]
+Q_A = fun.split_dialogue(Qs_A) 
+#print(len(Q_A))
+
+#随机生成对话(*20)
+dialogues = fun.generate_dialog_list(Q_A, 20)
+#print(dialogues[0])
+#print(len(dialogues))
+
+#打开Mongodb，集合：‘data’
 client = MongoClient('127.0.0.1', 27017)
 db_name = 'data'
 db = client[db_name]
-bank = db['bank']
-bank.remove()
+#write dialogue to mongodb, doc:'dialogue'
+#random 20*[]
+dia_db = db['dialogue']
+dia_db.remove()
 
-index = 0
-length = len(question)
-while index < length:
-    if question[index] != 'nan':
-        a1 = clean_str(question[index])
-        a2 = '' if answer[index] == 'nan' else clean_str(answer[index])
-        a3 = '' if intention[index] == 'nan' else clean_str(intention[index])
-        a4 = '' if super_intention[index] == 'nan'\
-                        else clean_str(super_intention[index])
-        a5 = '' if business[index] == 'nan' else clean_str(business[index])
-        bank.insert({"question":a1, "answer":a2, "intention":a3,\
-                "super_intention":a4, "business":a5})
-        q = equal_question[index].split('/')
-        for i in q:
-            if i != '':
-                bank.insert({"question":clean_str(i), "answer":a2,\
-                        "intention":a3, "super_intention":a4, "business":a5})
-    index += 1
+fun.write_dialog2mongodb(dia_db, dialogues)
 
-#生成指定格式
-Q = []
-A = []
-Q_A = []
-for row in bank.find():
-    Q.append(row['super_intention']+row['question'])
-    A.append(row['intention']+'_'+row['answer'])
-    Q_A.append([row['super_intention']+row['question'],\
-                    row['intention']+'_'+row['answer']])
-    
+#write q_a to mongodb, doc:'q_a'
+qa_db = db['q_a']
+qa_db.remove()
+
+for d in dia_db.find():
+    fun.write_qa2mongodb(qa_db, d)
+
+for qa in qa_db.find():
+    print(qa['_id'], qa['question'])
+
+
+
+#####################################
+#print Q/A to dialogue
+# Q1/intention
+# Q2/intention
+# Q3/intention
+#
+# Q1/intention
+# Q2/intention
+f = open('./dialogue', 'w')
+for d in dia_db.find():
+    question_list = d['question_list'].split('/')
+    intention_list = d['intention_list'].split('/')
+    i = 0
+    while i < len(question_list):
+        f.write(question_list[i] + '/' + intention_list[i] + '\n')
+        i += 1
+    f.write('\n')
+
+#----------------------------------
+#意图_回答{上级意图问题, 上级意图问题}
+test_Q = []
+test_A = []
+test_Q_A = []
+for row in Qs_A:
+    if row['answer'] == 'nan':
+        continue
+    for q in row['questions']:
+        super_intention = row['super_intention']
+        if row['super_intention'] == 'nan':
+            super_intention = ''
+        test_Q.append(super_intention+q)#上级意图问题
+        test_A.append(row['intention']+'_'+row['answer'])#意图_回答
+        test_Q_A.append([super_intention+q,\
+                row['intention']+'_'+row['answer']])
 
 if not os.path.exists(r'./data'):
     os.mkdir("data")
-A_list = list(set(A))
-for name in A_list:
+test_A_list = list(set(test_A))
+for name in test_A_list:
     f = open('./data/'+name, 'w')
-    for i in Q_A:
+    for i in test_Q_A:
         if name == i[1]:
             f.write(i[0]+'\n')
     f.close()
 
+######################################
 
