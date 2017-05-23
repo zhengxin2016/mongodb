@@ -123,13 +123,15 @@ def generate_dialog(q_a):
 #随机生成一组对话
 #输入：对话列表 Q_A[], 倍数
 #输出：对话列表实例 dialogues[]
-def generate_dialog_list(Q_A, num):
+def generate_dialog_list(Q_A):
     dialogues = []
-    i = 0
-    while i < num:
-        for q_a in Q_A:
+    N = 0
+    for q_a in Q_A:
+        for r in q_a:
+            N += len(r['questions'])
+        while N > 0:
             dialogues.append(generate_dialog(q_a))
-        i += 1
+            N -= 1
     random.shuffle(dialogues)#列表元素打乱
     return dialogues
 

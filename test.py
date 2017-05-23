@@ -49,7 +49,7 @@ Q_A = fun.split_dialogue(Qs_A)
 #print(len(Q_A))
 
 #随机生成对话(*20)
-dialogues = fun.generate_dialog_list(Q_A, 20)
+dialogues = fun.generate_dialog_list(Q_A)
 #print(dialogues[0])
 #print(len(dialogues))
 
@@ -57,22 +57,23 @@ dialogues = fun.generate_dialog_list(Q_A, 20)
 client = MongoClient('127.0.0.1', 27017)
 db_name = 'data'
 db = client[db_name]
+
 #write dialogue to mongodb, doc:'dialogue'
 #random 20*[]
 dia_db = db['dialogue']
 dia_db.remove()
-
 fun.write_dialog2mongodb(dia_db, dialogues)
+
+#print(dia_db.find().count())
 
 #write q_a to mongodb, doc:'q_a'
 qa_db = db['q_a']
 qa_db.remove()
-
 for d in dia_db.find():
     fun.write_qa2mongodb(qa_db, d)
 
-for qa in qa_db.find():
-    print(qa['_id'], qa['question'])
+#for qa in qa_db.find():
+#    print(qa['_id'], qa['question'])
 
 
 
@@ -99,6 +100,7 @@ for d in dia_db.find():
 test_Q = []
 test_A = []
 test_Q_A = []
+test_intention = []
 for row in Qs_A:
     if row['answer'] == 'nan':
         continue
@@ -107,19 +109,30 @@ for row in Qs_A:
         if row['super_intention'] == 'nan':
             super_intention = ''
         test_Q.append(super_intention+q)#上级意图问题
-        test_A.append(row['intention']+'_'+row['answer'])#意图_回答
+        test_A.append(row['intention']+':'+row['answer'])#意图_回答
+        test_intention.append(row['intention'])
         test_Q_A.append([super_intention+q,\
-                row['intention']+'_'+row['answer']])
+                row['intention']])
 
 if not os.path.exists(r'./data'):
     os.mkdir("data")
-test_A_list = list(set(test_A))
-for name in test_A_list:
+test_intention_list = list(set(test_intention))
+for name in test_intention_list:
     f = open('./data/'+name, 'w')
     for i in test_Q_A:
         if name == i[1]:
             f.write(i[0]+'\n')
     f.close()
+
+f = open('intention_answer', 'w')
+test_A_list = list(set(test_A))
+for i in test_A_list:
+    f.write(i + '\n')
+f.close()
+
+#test_Q_list = list(set(test_Q))
+#for i in test_Q_list:
+#    print(i)
 
 ######################################
 
