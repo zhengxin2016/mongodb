@@ -48,23 +48,29 @@ Qs_A = fun.generate_Qs_A(D)
 Q_A = fun.split_dialogue(Qs_A) 
 #print(len(Q_A))
 
-#随机生成对话(*20)
-dialogues = fun.generate_dialog_list(Q_A)
-#print(dialogues[0])
-#print(len(dialogues))
-
 #打开Mongodb，集合：‘data’
 client = MongoClient('127.0.0.1', 27017)
 db_name = 'data'
 db = client[db_name]
 
+#write raw dialogue to mongodb, doc:'raw_data'
+raw_db = db['raw_data']
+raw_db.remove()
+fun.write_raw_data2mongodb(raw_db, Q_A)
+#print(raw_db.find().count())
+
+
+#随机生成对话(*20)
+dialogues = fun.generate_dialog_list(Q_A)
+#print(dialogues[0])
+#print(len(dialogues))
+
 #write dialogue to mongodb, doc:'dialogue'
-#random 20*[]
 dia_db = db['dialogue']
 dia_db.remove()
-fun.write_dialog2mongodb(dia_db, dialogues)
-
-#print(dia_db.find().count())
+#fun.write_dialog2mongodb(dia_db, dialogues)
+fun.write_2(dia_db, raw_db)
+print(dia_db.find().count())
 
 #write q_a to mongodb, doc:'q_a'
 qa_db = db['q_a']
@@ -87,11 +93,9 @@ for d in dia_db.find():
 # Q2/intention
 f = open('./dialogue', 'w')
 for d in dia_db.find():
-    question_list = d['question_list'].split('/')
-    intention_list = d['intention_list'].split('/')
     i = 0
-    while i < len(question_list):
-        f.write(question_list[i] + '/' + intention_list[i] + '\n')
+    while i < len(d['question_list']):
+        f.write(d['question_list'][i] + '/' + d['intention_list'][i] + '\n')
         i += 1
     f.write('\n')
 
@@ -101,6 +105,7 @@ test_Q = []
 test_A = []
 test_Q_A = []
 test_intention = []
+test_business = []
 for row in Qs_A:
     if row['answer'] == 'nan':
         continue
@@ -111,18 +116,38 @@ for row in Qs_A:
         test_Q.append(super_intention+q)#上级意图问题
         test_A.append(row['intention']+':'+row['answer'])#意图_回答
         test_intention.append(row['intention'])
+        test_business.append(row['business'])
         test_Q_A.append([super_intention+q,\
-                row['intention']])
+        #test_Q_A.append([q,\
+                row['intention'], row['business']])
 
 if not os.path.exists(r'./data'):
     os.mkdir("data")
 test_intention_list = list(set(test_intention))
 for name in test_intention_list:
     f = open('./data/'+name, 'w')
+    tmp = []
     for i in test_Q_A:
         if name == i[1]:
+            tmp.append(i[0])
+            #f.write(i[0]+'\n')
+    tmp_list = list(set(tmp))
+    for i in tmp_list:
+        f.write(i+'\n')
+    f.close()
+
+#'''
+if not os.path.exists(r'./data_gu'):
+    os.mkdir("data_gu")
+test_business_list = list(set(test_business))
+for name in test_business_list:
+    #print(name)
+    f = open('./data_gu/'+name, 'w')
+    for i in test_Q_A:
+        if name == i[2]:
             f.write(i[0]+'\n')
     f.close()
+#'''
 
 f = open('intention_answer', 'w')
 test_A_list = list(set(test_A))
@@ -131,6 +156,7 @@ for i in test_A_list:
 f.close()
 
 #test_Q_list = list(set(test_Q))
+#print(len(test_Q_list))
 #for i in test_Q_list:
 #    print(i)
 

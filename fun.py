@@ -109,6 +109,28 @@ def split_dialogue(Qs_A):
         end += 1
     return Q_A
 
+#
+#
+#
+def write_raw_data2mongodb(raw_db, Q_A):
+    for d in Q_A:
+        q_list = []
+        a_list = []
+        business_list = []
+        intention_list = []
+        super_intention_list = []
+        for q_a in d:
+            q_list.append(q_a['questions'])
+            a_list.append(q_a['answer'])
+            business_list.append(q_a['business'])
+            intention_list.append(q_a['intention'])
+            super_intention_list.append(q_a['super_intention'])
+        raw_db.insert({"question_list":q_list,
+                "answer_list":a_list,
+                "business_list":business_list,
+                "intention_list":intention_list,
+                "super_intention_list":super_intention_list})
+
 #产生一个对话 
 #输入：[[第一句], [第二句],[第三句]]
 #输出：[第一句, 第二句,第三句]
@@ -120,8 +142,25 @@ def generate_dialog(q_a):
                 r['intention'], r['super_intention']])
     return a
 
+def write_2(dialog_db, raw_db):
+    for d in raw_db.find():
+        N = 0
+        for q in d['question_list']:
+            N += len(q)
+        while N > 0:
+            q_list = []
+            for q in d['question_list']:
+                i = random.randint(0, len(q) - 1)
+                q_list.append(q[i])
+            dialog_db.insert({"question_list":q_list,
+                    "answer_list":d['answer_list'],
+                    "business_list":d['business_list'],
+                    "intention_list":d['intention_list'],
+                    "super_intention_list":d['super_intention_list']})
+            N -= 1
+
 #随机生成一组对话
-#输入：对话列表 Q_A[], 倍数
+#输入：对话列表 Q_A[]
 #输出：对话列表实例 dialogues[]
 def generate_dialog_list(Q_A):
     dialogues = []
@@ -141,38 +180,34 @@ def generate_dialog_list(Q_A):
 #输出：无
 def write_dialog2mongodb(dialog_db, dialogues):
     for d in dialogues:
-        q_list = ''
-        a_list = ''
-        business_list = ''
-        intention_list = ''
-        super_intention_list = ''
+        q_list = []
+        a_list = []
+        business_list = []
+        intention_list = []
+        super_intention_list = []
         for s in d:
-            q_list += s[0] + '/'
-            a_list += s[1] + '/'
-            business_list += s[2] + '/'
-            intention_list += s[3] + '/'
-            super_intention_list += s[4] + '/'
-        dialog_db.insert({"question_list":q_list[:-1],
-                "answer_list":a_list[:-1],
-                "business_list":business_list[:-1],
-                "intention_list":intention_list[:-1],
-                "super_intention_list":super_intention_list[:-1]})
+            q_list.append(s[0])
+            a_list.append(s[1])
+            business_list.append(s[2])
+            intention_list.append(s[3])
+            super_intention_list.append(s[4])
+        dialog_db.insert({"question_list":q_list,
+                "answer_list":a_list,
+                "business_list":business_list,
+                "intention_list":intention_list,
+                "super_intention_list":super_intention_list})
 
 #以一问一答为单位存到数据库中
 #输入：一个对话
 #输出：无
 def write_qa2mongodb(qa_db, dia):
-    question_list = dia['question_list'].split('/')
-    answer_list = dia['answer_list'].split('/')
-    business_list = dia['business_list'].split('/')
-    intention_list = dia['intention_list'].split('/')
-    super_intention_list = dia['super_intention_list'].split('/')
     i = 0
-    while i < len(question_list):
+    while i < len(dia['question_list']):
         qa_db.insert({"ID":str(dia['_id'])+'_'+ str(i),
-                "question":question_list[i],
-                "answer":answer_list[i],
-                "business":business_list[i],
-                "intention":intention_list[i],
-                "super_intention":super_intention_list[i]})
+                "question":dia['question_list'][i],
+                "answer":dia['answer_list'][i],
+                "business":dia['business_list'][i],
+                "intention":dia['intention_list'][i],
+                "super_intention":dia['super_intention_list'][i]})
         i += 1
+
