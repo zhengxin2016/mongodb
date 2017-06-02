@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
 import random
 import pandas as pd
 import numpy as np
@@ -12,9 +13,15 @@ import fun
 #读取excel
 D = {'question':[],
         'answer':[],
+        'q_sentence_type':[],
+        'a_sentence_type':[],
+        'type':[],
         'business':[],
         'intention':[],
         'super_intention':[],
+        'scene':[],
+        'domain':[],
+        'key_words':[],
         'equal_questions':[]}
 
 fun.read_excel(D)
@@ -36,17 +43,9 @@ while i < len(D['question']):
         D['equal_questions'][i] = D['equal_questions'][i][:-1]
     i += 1
 
-#write to data.txt
-fun.data_xlsx2txt(D)
-
-#生成Qs_A[]
-Qs_A = fun.generate_Qs_A(D)
-
 #按对话切分列表
-#Qs_A[] => Q_A[]
-#[{1},{2},{'nan'},{3}] => [[{1},{2}], [{3}]]
-Q_A = fun.split_dialogue(Qs_A) 
-#print(len(Q_A))
+dd = fun.split_dialog(D)
+#print(len(dd))
 
 #打开Mongodb，集合：‘data’
 client = MongoClient('127.0.0.1', 27017)
@@ -56,41 +55,41 @@ db = client[db_name]
 #write raw dialogue to mongodb, doc:'raw_data'
 raw_db = db['raw_data']
 raw_db.remove()
-fun.write_raw_data2mongodb(raw_db, Q_A)
+fun.write_raw_data2mongodb(raw_db, dd)
 #print(raw_db.find().count())
-
-
-#随机生成对话(*20)
-dialogues = fun.generate_dialog_list(Q_A)
-#print(dialogues[0])
-#print(len(dialogues))
 
 #write dialogue to mongodb, doc:'dialogue'
 dia_db = db['dialogue']
 dia_db.remove()
-#fun.write_dialog2mongodb(dia_db, dialogues)
-fun.write_2(dia_db, raw_db)
-print(dia_db.find().count())
+fun.write_dialog2mongodb(dia_db, raw_db)
+#print(dia_db.find().count())
 
 #write q_a to mongodb, doc:'q_a'
 qa_db = db['q_a']
 qa_db.remove()
-for d in dia_db.find():
-    fun.write_qa2mongodb(qa_db, d)
+fun.write_qa2mongodb(qa_db, dia_db)
 
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
 
 
 
-#####################################
-#print Q/A to dialogue
-# Q1/intention
-# Q2/intention
-# Q3/intention
+###############################################
 #
-# Q1/intention
-# Q2/intention
+#
+#           输出制定格式数据
+#
+#
+###############################################
+#print {dialogue} to dialogue
+#
+# q1/intention1
+# q2/intention2
+# q3/intention3
+#
+# q1/intention1
+# q2/intention2
+#
 f = open('./dialogue', 'w')
 for d in dia_db.find():
     i = 0
@@ -98,67 +97,96 @@ for d in dia_db.find():
         f.write(d['question_list'][i] + '/' + d['intention_list'][i] + '\n')
         i += 1
     f.write('\n')
+f.close()
 
-#----------------------------------
-#意图_回答{上级意图问题, 上级意图问题}
-test_Q = []
-test_A = []
-test_Q_A = []
+######################################
+#数据提取
+
 test_intention = []
 test_business = []
-for row in Qs_A:
-    if row['answer'] == 'nan':
-        continue
-    for q in row['questions']:
-        super_intention = row['super_intention']
-        if row['super_intention'] == 'nan':
-            super_intention = ''
-        test_Q.append(super_intention+q)#上级意图问题
-        test_A.append(row['intention']+':'+row['answer'])#意图_回答
-        test_intention.append(row['intention'])
-        test_business.append(row['business'])
-        test_Q_A.append([super_intention+q,\
-        #test_Q_A.append([q,\
-                row['intention'], row['business']])
+test_sentence_type = []
+test_intention_answer = []
+test_data = [] #[问题，上级意图问题，意图，业务，问题句型, 回答]
+for d in raw_db.find():
+    i = 0
+    while i < len(d['intention_list']):
+        test_intention.append(d['intention_list'][i])
+        test_business.append(d['business_list'][i])
+        test_sentence_type.append(d['q_sentence_type_list'][i])
+        test_intention_answer.append(d['intention_list'][i] + ':' +
+            d['answer_list'][i])
+        for q in d['question_list'][i]:
+            if d['super_intention_list'][i] == 'nan':
+                test_data.append([q, q, d['intention_list'][i],
+                    d['business_list'][i], d['q_sentence_type_list'][i],
+                    d['answer_list'][i]])
+            else:
+                test_data.append([q, d['super_intention_list'][i] + q,
+                    d['intention_list'][i], d['business_list'][i],
+                    d['q_sentence_type_list'][i], d['answer_list'][i]])
+        i += 1
 
-if not os.path.exists(r'./data'):
-    os.mkdir("data")
-test_intention_list = list(set(test_intention))
-for name in test_intention_list:
-    f = open('./data/'+name, 'w')
-    tmp = []
-    for i in test_Q_A:
-        if name == i[1]:
-            tmp.append(i[0])
-            #f.write(i[0]+'\n')
-    tmp_list = list(set(tmp))
-    for i in tmp_list:
-        f.write(i+'\n')
-    f.close()
-
-#'''
-if not os.path.exists(r'./data_gu'):
-    os.mkdir("data_gu")
-test_business_list = list(set(test_business))
-for name in test_business_list:
-    #print(name)
-    f = open('./data_gu/'+name, 'w')
-    for i in test_Q_A:
-        if name == i[2]:
-            f.write(i[0]+'\n')
-    f.close()
-#'''
+#####################################
+#print {raw_data} to dialogue
+#
+# intention1:a1
+# intention2:a2
+# intention3:a3
+#
+#[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
 
 f = open('intention_answer', 'w')
-test_A_list = list(set(test_A))
-for i in test_A_list:
+for i in list(set(test_intention_answer)):
     f.write(i + '\n')
 f.close()
 
-#test_Q_list = list(set(test_Q))
-#print(len(test_Q_list))
-#for i in test_Q_list:
-#    print(i)
 
 ######################################
+#意图{上级意图问题, 上级意图问题}
+#/data/
+#[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
+
+path = r'./intention/'
+if os.path.exists(path):
+    shutil.rmtree(path)
+os.mkdir(path)
+for intention_name in list(set(test_intention)):
+    f = open(path+intention_name, 'w')
+    for i in test_data:
+        if intention_name == i[2]:
+            f.write(i[1]+'\n')
+    f.close()
+
+######################################
+#[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
+path = r'./business/'
+if os.path.exists(path):
+    shutil.rmtree(path)
+os.mkdir(path)
+for business_name in list(set(test_business)):
+    f = open(path+business_name, 'w')
+    for i in test_data:
+        if business_name == i[3]:
+            f.write(i[1]+'\n')
+    f.close()
+
+######################################
+#[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
+path = r'./sentence_type/'
+if os.path.exists(path):
+    shutil.rmtree(path)
+os.mkdir(path)
+for sentence_type_name in list(set(test_sentence_type)):
+    f = open(path+sentence_type_name, 'w')
+    for i in test_data:
+        if sentence_type_name == i[4]:
+            f.write(i[0]+'\n')
+    f.close()
+
+
+######################################
+
+
+
+
 

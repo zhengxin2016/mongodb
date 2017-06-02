@@ -45,104 +45,102 @@ def read_excel(D):
             D['question'].append(str(i))
         for i in df['回答']:
             D['answer'].append(str(i))
+        for i in df['问题句型']:
+            D['q_sentence_type'].append(str(i))
+        for i in df['回答句型']:
+            D['a_sentence_type'].append(str(i))
+        for i in df['类型']:
+            D['type'].append(str(i))
         for i in df['业务']:
             D['business'].append(str(i))
         for i in df['意图']:
             D['intention'].append(str(i))
         for i in df['上级意图']:
             D['super_intention'].append(str(i))
+        for i in df['场景']:
+            D['scene'].append(str(i))
+        for i in df['领域']:
+            D['domain'].append(str(i))
+        for i in df['关键词']:
+            D['key_words'].append(str(i))
         for i in df['等价描述']:
             D['equal_questions'].append(str(i))
 
         if D['answer'][-1] != 'nan':
             D['question'].append('nan')
             D['answer'].append('nan')
+            D['q_sentence_type'].append('nan')
+            D['a_sentence_type'].append('nan')
+            D['type'].append('nan')
             D['business'].append('nan')
             D['intention'].append('nan')
             D['super_intention'].append('nan')
+            D['scene'].append('nan')
+            D['domain'].append('nan')
+            D['key_words'].append('nan')
             D['equal_questions'].append('nan')
 
-#将读取data.xlsx的内容写到data.txt中
-#输入：修正后的data.xlsx内容 Dict
-#输出：无
-def data_xlsx2txt(Dict):
-    f = open('./data.txt', 'w')
-    i = 0
-    while i < len(Dict['question']):
-        f.write(Dict['question'][i]+' '+Dict['answer'][i]+' '
-                        +Dict['business'][i]+' '+Dict['intention'][i] +' '
-                        +Dict['super_intention'][i]+' '
-                        +Dict['equal_questions'][i]+'\n')
-        i += 1
-    f.close()
-
-#生成问答列表
-#输入：修正后的data.xlsx内容 Dict
-#输出：问答列表 Qs_A[]
-def generate_Qs_A(Dict):
-    Qs_A = []
-    i = 0
-    while i < len(Dict['question']):
-        q = Dict['equal_questions'][i].split('/')
-        q.append(Dict['question'][i])
-        Qs_A.append({'questions':q,
-            'answer':Dict['answer'][i],
-            'business':Dict['business'][i],
-            'intention':Dict['intention'][i],
-            'super_intention':Dict['super_intention'][i]})
-        i += 1
-    return Qs_A
 
 #按对话切分列表
-#输入：Qs_A[]  [{1},{2},{'nan'},{3}]
-#输出：Q_A[]   [[{1},{2}], [{3}]]
-def split_dialogue(Qs_A):
-    Q_A = []
+#输入：Dict
+#输出：raw_data格式
+def split_dialog(D):
+    DD = []
     start = 0
     end = 0
-    for r in Qs_A:
-        if r['answer'] == 'nan':
-            Q_A.append(Qs_A[start:end])
+    for q in D['question']:
+        if q == 'nan':
+            e_qs = []
+            i = start
+            while i < end:
+                qs = D['equal_questions'][i].split('/')
+                qs.append(D['question'][i])
+                e_qs.append(qs)
+                i += 1
+            DD.append({'question':D['question'][start:end],
+                'answer':D['answer'][start:end],
+                'q_sentence_type':D['q_sentence_type'][start:end],
+                'a_sentence_type':D['a_sentence_type'][start:end],
+                'type':D['type'][start:end],
+                'business':D['business'][start:end],
+                'intention':D['intention'][start:end],
+                'super_intention':D['super_intention'][start:end],
+                'scene':D['scene'][start:end],
+                'domain':D['domain'][start:end],
+                'key_words':D['key_words'][start:end],
+                'equal_questions':e_qs})
             start = end + 1
             end += 1
             continue
         end += 1
-    return Q_A
+    return DD
 
-#
-#
-#
-def write_raw_data2mongodb(raw_db, Q_A):
-    for d in Q_A:
-        q_list = []
-        a_list = []
-        business_list = []
-        intention_list = []
-        super_intention_list = []
-        for q_a in d:
-            q_list.append(q_a['questions'])
-            a_list.append(q_a['answer'])
-            business_list.append(q_a['business'])
-            intention_list.append(q_a['intention'])
-            super_intention_list.append(q_a['super_intention'])
-        raw_db.insert({"question_list":q_list,
-                "answer_list":a_list,
-                "business_list":business_list,
-                "intention_list":intention_list,
-                "super_intention_list":super_intention_list})
 
-#产生一个对话 
-#输入：[[第一句], [第二句],[第三句]]
-#输出：[第一句, 第二句,第三句]
-def generate_dialog(q_a):
-    a = []
-    for r in q_a:
-        index = random.randint(0, len(r['questions'])-1)
-        a.append([r['questions'][index], r['answer'], r['business'],\
-                r['intention'], r['super_intention']])
-    return a
+#以对话为单位存到数据库中
+#输入：raw_db, Q_A
+#输出：无
+def write_raw_data2mongodb(raw_db, dialogues):
+    data = []
+    for d in dialogues:
+        data.append({"question_list":d['equal_questions'],
+                "answer_list":d['answer'],
+                "q_sentence_type_list":d['q_sentence_type'],
+                "a_sentence_type_list":d['a_sentence_type'],
+                "type_list":d['type'],
+                "business_list":d['business'],
+                "intention_list":d['intention'],
+                "super_intention_list":d['super_intention'],
+                "scene_list":d['scene'],
+                "domain_list":d['domain'],
+                "key_words_list":d['key_words']
+                })
+    raw_db.insert(data)
 
-def write_2(dialog_db, raw_db):
+#随机生成对话列表，以对话为单位存到数据库中
+#输入：dialog_db, raw_db
+#输出：无
+def write_dialog2mongodb(dialog_db, raw_db):
+    data = []
     for d in raw_db.find():
         N = 0
         for q in d['question_list']:
@@ -152,62 +150,40 @@ def write_2(dialog_db, raw_db):
             for q in d['question_list']:
                 i = random.randint(0, len(q) - 1)
                 q_list.append(q[i])
-            dialog_db.insert({"question_list":q_list,
+            data.append({"question_list":q_list,
                     "answer_list":d['answer_list'],
+                    "q_sentence_type_list":d['q_sentence_type_list'],
+                    "a_sentence_type_list":d['a_sentence_type_list'],
+                    "type_list":d['type_list'],
                     "business_list":d['business_list'],
                     "intention_list":d['intention_list'],
+                    "scene_list":d['scene_list'],
+                    "domain_list":d['domain_list'],
+                    "key_words_list":d['key_words_list'],
                     "super_intention_list":d['super_intention_list']})
             N -= 1
-
-#随机生成一组对话
-#输入：对话列表 Q_A[]
-#输出：对话列表实例 dialogues[]
-def generate_dialog_list(Q_A):
-    dialogues = []
-    N = 0
-    for q_a in Q_A:
-        for r in q_a:
-            N += len(r['questions'])
-        while N > 0:
-            dialogues.append(generate_dialog(q_a))
-            N -= 1
-    random.shuffle(dialogues)#列表元素打乱
-    return dialogues
-
-
-#以对话为单位存到数据库中
-#输入：对话列表
-#输出：无
-def write_dialog2mongodb(dialog_db, dialogues):
-    for d in dialogues:
-        q_list = []
-        a_list = []
-        business_list = []
-        intention_list = []
-        super_intention_list = []
-        for s in d:
-            q_list.append(s[0])
-            a_list.append(s[1])
-            business_list.append(s[2])
-            intention_list.append(s[3])
-            super_intention_list.append(s[4])
-        dialog_db.insert({"question_list":q_list,
-                "answer_list":a_list,
-                "business_list":business_list,
-                "intention_list":intention_list,
-                "super_intention_list":super_intention_list})
+    dialog_db.insert(data)
 
 #以一问一答为单位存到数据库中
 #输入：一个对话
 #输出：无
-def write_qa2mongodb(qa_db, dia):
-    i = 0
-    while i < len(dia['question_list']):
-        qa_db.insert({"ID":str(dia['_id'])+'_'+ str(i),
-                "question":dia['question_list'][i],
-                "answer":dia['answer_list'][i],
-                "business":dia['business_list'][i],
-                "intention":dia['intention_list'][i],
-                "super_intention":dia['super_intention_list'][i]})
-        i += 1
+def write_qa2mongodb(qa_db, dia_db):
+    data = []
+    for d in dia_db.find():
+        i = 0
+        while i < len(d['question_list']):
+            data.append({"ID":str(d['_id'])+'_'+ str(i),
+                    "question":d['question_list'][i],
+                    "answer":d['answer_list'][i],
+                    "q_sentence_type":d['q_sentence_type_list'][i],
+                    "a_sentence_type":d['a_sentence_type_list'][i],
+                    "type":d['type_list'][i],
+                    "business":d['business_list'][i],
+                    "intention":d['intention_list'][i],
+                    "scene":d['scene_list'][i],
+                    "domain":d['domain_list'][i],
+                    "key_words":d['key_words_list'][i],
+                    "super_intention":d['super_intention_list'][i]})
+            i += 1
+    qa_db.insert(data)
 
