@@ -191,7 +191,6 @@ for sentence_type_name in list(set(test_sentence_type)):
             f.write(i[0]+'\n')
     f.close()
 
-
 ######################################
 
 
