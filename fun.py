@@ -10,7 +10,7 @@ from pymongo import MongoClient
 #字符清理
 def clean_str(string):
     string.strip()
-    string = string.replace(' ', '')
+    #string = string.replace(' ', '')
     string = string.replace(',', '，')
     string = string.replace('.', '。')
     string = string.replace('?', '？')

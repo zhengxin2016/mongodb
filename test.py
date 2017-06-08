@@ -46,7 +46,6 @@ while i < len(D['question']):
 #按对话切分列表
 dd = fun.split_dialog(D)
 #print(len(dd))
-
 #打开Mongodb，集合：‘data’
 client = MongoClient('127.0.0.1', 27017)
 db_name = 'data'
@@ -71,7 +70,6 @@ fun.write_qa2mongodb(qa_db, dia_db)
 
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
-
 
 
 ###############################################
@@ -150,12 +148,22 @@ path = r'./intention/'
 if os.path.exists(path):
     shutil.rmtree(path)
 os.mkdir(path)
+path_0 = r'./intention_0/'
+if os.path.exists(path_0):
+    shutil.rmtree(path_0)
+os.mkdir(path_0)
 for intention_name in list(set(test_intention)):
     f = open(path+intention_name, 'w')
+    f0 = open(path_0+intention_name, 'w')
+    tmp = []
     for i in test_data:
         if intention_name == i[2]:
             f.write(i[1]+'\n')
+            tmp.append(i[0])
+    for i in list(set(tmp)):
+        f0.write(i+'\n')
     f.close()
+    f0.close()
 
 ######################################
 #[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
@@ -185,8 +193,5 @@ for sentence_type_name in list(set(test_sentence_type)):
 
 
 ######################################
-
-
-
 
 
