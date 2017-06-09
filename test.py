@@ -28,8 +28,7 @@ fun.read_excel(D)
 
 #clean_str
 #标点修正，等价描述修正
-i = 0
-while i < len(D['question']):
+for i in range(len(D['question'])):
     for r in D.values():
         r[i] = fun.clean_str(r[i])
     if D['answer'][i] != 'nan':
@@ -41,7 +40,6 @@ while i < len(D['question']):
         D['equal_questions'][i] = D['equal_questions'][i][:-1]
     if D['equal_questions'][i][0] == '/':
         D['equal_questions'][i] = D['equal_questions'][i][:-1]
-    i += 1
 
 #按对话切分列表
 dd = fun.split_dialog(D)
@@ -90,10 +88,8 @@ fun.write_qa2mongodb(qa_db, dia_db)
 #
 f = open('./dialogue', 'w')
 for d in dia_db.find():
-    i = 0
-    while i < len(d['question_list']):
+    for i in range(len(d['question_list'])):
         f.write(d['question_list'][i] + '/' + d['intention_list'][i] + '\n')
-        i += 1
     f.write('\n')
 f.close()
 
@@ -106,8 +102,7 @@ test_sentence_type = []
 test_intention_answer = []
 test_data = [] #[问题，上级意图问题，意图，业务，问题句型, 回答]
 for d in raw_db.find():
-    i = 0
-    while i < len(d['intention_list']):
+    for i in range(len(d['intention_list'])):
         test_intention.append(d['intention_list'][i])
         test_business.append(d['business_list'][i])
         test_sentence_type.append(d['q_sentence_type_list'][i])
@@ -122,7 +117,6 @@ for d in raw_db.find():
                 test_data.append([q, d['super_intention_list'][i] + q,
                     d['intention_list'][i], d['business_list'][i],
                     d['q_sentence_type_list'][i], d['answer_list'][i]])
-        i += 1
 
 #####################################
 #print {raw_data} to dialogue

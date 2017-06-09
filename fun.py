@@ -170,8 +170,7 @@ def write_dialog2mongodb(dialog_db, raw_db):
 def write_qa2mongodb(qa_db, dia_db):
     data = []
     for d in dia_db.find():
-        i = 0
-        while i < len(d['question_list']):
+        for i in range(len(d['question_list'])):
             data.append({"ID":str(d['_id'])+'_'+ str(i),
                     "question":d['question_list'][i],
                     "answer":d['answer_list'][i],
@@ -184,6 +183,5 @@ def write_qa2mongodb(qa_db, dia_db):
                     "domain":d['domain_list'][i],
                     "key_words":d['key_words_list'][i],
                     "super_intention":d['super_intention_list'][i]})
-            i += 1
     qa_db.insert(data)
 
