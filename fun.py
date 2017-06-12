@@ -167,12 +167,13 @@ def write_dialog2mongodb(dialog_db, raw_db):
 #以一问一答为单位存到数据库中
 #输入：一个对话
 #输出：无
-def write_qa2mongodb(qa_db, dia_db):
+def write_qa2mongodb(qa_db, raw_db):
     data = []
-    for d in dia_db.find():
+    for d in raw_db.find():
         for i in range(len(d['question_list'])):
-            data.append({"ID":str(d['_id'])+'_'+ str(i),
-                    "question":d['question_list'][i],
+            for j in range(len(d['question_list'][i])):
+                data.append({
+                    "question":d['question_list'][i][j],
                     "answer":d['answer_list'][i],
                     "q_sentence_type":d['q_sentence_type_list'][i],
                     "a_sentence_type":d['a_sentence_type_list'][i],
@@ -184,4 +185,7 @@ def write_qa2mongodb(qa_db, dia_db):
                     "key_words":d['key_words_list'][i],
                     "super_intention":d['super_intention_list'][i]})
     qa_db.insert(data)
+
+
+
 
