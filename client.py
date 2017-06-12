@@ -2,14 +2,27 @@
 
 from pymongo import MongoClient
 
-#打开Mongodb，集合：‘data’
-client = MongoClient('127.0.0.1', 27017)
-db_name = 'data'
-db = client[db_name]
+class ReadData():
+    def __init__(self):
+        self.db = MongoClient('10.89.14.67', 27017).data
 
-#write dialogue to mongodb, doc:'dialogue'
-#random 20*[]
-dia_db = db['dialogue']
-qa_db = db['q_a']
-for d in dia_db.find():
-    print(d['answer_list'])
+    def intention_answer(self):
+        data = [x['intention'] +':'+ x['answer'] for x in self.db.q_a.find()]
+        return list(set(data))
+
+    def dialogue(self):
+        data = [[x['question_list'], x['answer_list']] for x in
+                self.db.dialogue.find()]
+        return data
+    def intention_group(self):
+        intention = [x for x in self.db.q_a.distinct('intention')]
+        print(dir(self.db.q_a))
+
+
+
+if __name__ == '__main__': 
+    readData = ReadData()
+
+    for i in readData.intention_answer():
+        pass#print(i)
+    readData.intention_group()
