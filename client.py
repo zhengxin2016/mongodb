@@ -9,12 +9,12 @@ class ReadData():
     def intention_answer(self, intention):
         data = self.db.intention_answer.find_one({'intention':intention},
                 {'_id':0, 'answer':1})
-        return (data['answer'])
+        return data['answer']
 
     def intention_questions(self, intention):
         data = self.db.intention_questions.find_one({'intention':intention},
                 {'_id':0, 'questions':1})
-        return (data['questions'])
+        return data['questions']
 
     def dialogue(self):
         data = [[x['question_list'], x['answer_list']] for x in
