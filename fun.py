@@ -187,25 +187,23 @@ def write_qa2mongodb(qa_db, raw_db):
     qa_db.insert(data)
 
 
-#以等价问题列表一答为单位存到数据库中
+#以意图回答为单位存到数据库中
 #输入：
 #输出：无
-def write_qsa2mongodb(qsa_db, raw_db):
-    data = []
-    for d in raw_db.find():
-        for i in range(len(d['question_list'])):
-            data.append({
-                "question_list":d['question_list'][i],
-                "answer":d['answer_list'][i],
-                "q_sentence_type":d['q_sentence_type_list'][i],
-                "a_sentence_type":d['a_sentence_type_list'][i],
-                "type":d['type_list'][i],
-                "business":d['business_list'][i],
-                "intention":d['intention_list'][i],
-                "scene":d['scene_list'][i],
-                "domain":d['domain_list'][i],
-                "key_words":d['key_words_list'][i],
-                "super_intention":d['super_intention_list'][i]})
-    qsa_db.insert(data)
+def write_ia2mongodb(ia_db, qa_db):
+    intention_answer = {x['intention']:x['answer'] for x in qa_db.find()}
+    for x in intention_answer.keys():
+        ia_db.insert_one({'intention':x, 'answer':intention_answer[x]})
+
+#以意图回答为单位存到数据库中
+#输入：
+#输出：无
+def write_iqs2mongodb(iqs_db, qa_db):
+    intention_questions = [{'intention':x, 'questions':[]}
+            for x in qa_db.distinct('intention')]
+    for x in intention_questions:
+        x['questions'] = (list(set(x['question']
+            for x in qa_db.find({'intention':x['intention']}))))
+    iqs_db.insert(intention_questions)
 
 
