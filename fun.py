@@ -165,7 +165,7 @@ def write_dialog2mongodb(dialog_db, raw_db):
     dialog_db.insert(data)
 
 #以一问一答为单位存到数据库中
-#输入：一个对话
+#输入：
 #输出：无
 def write_qa2mongodb(qa_db, raw_db):
     data = []
@@ -187,5 +187,25 @@ def write_qa2mongodb(qa_db, raw_db):
     qa_db.insert(data)
 
 
+#以等价问题列表一答为单位存到数据库中
+#输入：
+#输出：无
+def write_qsa2mongodb(qsa_db, raw_db):
+    data = []
+    for d in raw_db.find():
+        for i in range(len(d['question_list'])):
+            data.append({
+                "question_list":d['question_list'][i],
+                "answer":d['answer_list'][i],
+                "q_sentence_type":d['q_sentence_type_list'][i],
+                "a_sentence_type":d['a_sentence_type_list'][i],
+                "type":d['type_list'][i],
+                "business":d['business_list'][i],
+                "intention":d['intention_list'][i],
+                "scene":d['scene_list'][i],
+                "domain":d['domain_list'][i],
+                "key_words":d['key_words_list'][i],
+                "super_intention":d['super_intention_list'][i]})
+    qsa_db.insert(data)
 
 

@@ -69,6 +69,11 @@ fun.write_qa2mongodb(qa_db, raw_db)
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
 
+#write qs_a to mongodb, doc:'qs_a'
+qsa_db = db['qs_a']
+qsa_db.remove()
+fun.write_qsa2mongodb(qsa_db, raw_db)
+
 
 ###############################################
 #
