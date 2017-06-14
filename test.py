@@ -69,15 +69,10 @@ fun.write_qa2mongodb(qa_db, raw_db)
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
 
-#write intention_answer to mongodb, doc:'intention_answer'
-intention_answer_db = db['intention_answer']
-intention_answer_db.remove()
-fun.write_ia2mongodb(intention_answer_db, qa_db)
-
-#write intention_questions to mongodb, doc:'intention_questions'
-intention_questions_db = db['intention_questions']
-intention_questions_db.remove()
-fun.write_iqs2mongodb(intention_questions_db, qa_db)
+#write intention_questions_answer to mongodb, doc:'intention'
+intention_db = db['intention']
+intention_db.remove()
+fun.write_iqs2mongodb(intention_db, qa_db)
 
 
 ###############################################

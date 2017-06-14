@@ -187,23 +187,16 @@ def write_qa2mongodb(qa_db, raw_db):
     qa_db.insert(data)
 
 
-#以意图回答为单位存到数据库中
-#输入：
-#输出：无
-def write_ia2mongodb(ia_db, qa_db):
-    intention_answer = {x['intention']:x['answer'] for x in qa_db.find()}
-    for x in intention_answer.keys():
-        ia_db.insert_one({'intention':x, 'answer':intention_answer[x]})
-
-#以意图回答为单位存到数据库中
+#以{意图，问题列表，回答}为单位存到数据库中
 #输入：
 #输出：无
 def write_iqs2mongodb(iqs_db, qa_db):
-    intention_questions = [{'intention':x, 'questions':[]}
+    intention_questions = [{'intention':x, 'questions':None, 'answer':None}
             for x in qa_db.distinct('intention')]
-    for x in intention_questions:
-        x['questions'] = (list(set(x['question']
-            for x in qa_db.find({'intention':x['intention']}))))
+    for i in intention_questions:
+        i['questions'] = list(set(x['question']
+            for x in qa_db.find({'intention':i['intention']})))
+        i['answer'] = qa_db.find_one({'intention':i['intention']}, {'_id':0, 'answer':1})['answer']
     iqs_db.insert(intention_questions)
 
 

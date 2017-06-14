@@ -7,12 +7,12 @@ class ReadData():
         self.db = MongoClient('127.0.0.1', 27017).data
 
     def intention_answer(self, intention):
-        data = self.db.intention_answer.find_one({'intention':intention},
+        data = self.db.intention.find_one({'intention':intention},
                 {'_id':0, 'answer':1})
         return data['answer']
 
     def intention_questions(self, intention):
-        data = self.db.intention_questions.find_one({'intention':intention},
+        data = self.db.intention.find_one({'intention':intention},
                 {'_id':0, 'questions':1})
         return data['questions']
 
@@ -27,7 +27,6 @@ class ReadData():
 if __name__ == '__main__': 
     readData = ReadData()
 
-    print(readData.intention_answer('存款'))
+    print(readData.intention_answer('存款五万以下'))
     print('-------------------------------------')
-    print(readData.intention_questions('存款'))
-
+    print(readData.intention_questions('存款五万以下'))
