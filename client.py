@@ -9,11 +9,15 @@ class ReadData():
     def intention_answer(self, intention):
         data = self.db.intention.find_one({'intention':intention},
                 {'_id':0, 'answer':1})
+        if data is None:
+            return None
         return data['answer']
 
     def intention_questions(self, intention):
         data = self.db.intention.find_one({'intention':intention},
                 {'_id':0, 'questions':1})
+        if data is None:
+            return None
         return data['questions']
 
     def dialogue(self):
