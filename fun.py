@@ -9,7 +9,7 @@ from pymongo import MongoClient
 
 #字符清理
 def clean_str(string):
-    string.strip()
+    string = string.strip()
     #string = string.replace(' ', '')
     string = string.replace(',', '，')
     string = string.replace('.', '。')
@@ -191,12 +191,15 @@ def write_qa2mongodb(qa_db, raw_db):
 #输入：
 #输出：无
 def write_iqs2mongodb(iqs_db, qa_db):
-    intention_questions = [{'intention':x, 'questions':None, 'answer':None}
+    intention= [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None, 'business':None}
             for x in qa_db.distinct('intention')]
-    for i in intention_questions:
+    for i in intention:
         i['questions'] = list(set(x['question']
             for x in qa_db.find({'intention':i['intention']})))
-        i['answer'] = qa_db.find_one({'intention':i['intention']}, {'_id':0, 'answer':1})['answer']
-    iqs_db.insert(intention_questions)
+        data = qa_db.find_one({'intention':i['intention']})
+        i['answer'] = data['answer']
+        i['super_intention'] = data['super_intention']
+        i['business'] = data['business']
+    iqs_db.insert(intention)
 
 
