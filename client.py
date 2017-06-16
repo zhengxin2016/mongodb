@@ -45,6 +45,8 @@ if __name__ == '__main__':
     print(readData.intention_answer('XXX'))
     print('[XXX] question_list:')
     print(readData.intention_questions('XXX'))
+    print('[挂失银行卡] question_list:')
+    print(readData.intention_questions('挂失银行卡'))
 
 
 

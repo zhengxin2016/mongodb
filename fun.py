@@ -191,14 +191,17 @@ def write_qa2mongodb(qa_db, raw_db):
 #输入：
 #输出：无
 def write_iqs2mongodb(iqs_db, qa_db):
-    intention= [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None, 'business':None}
-            for x in qa_db.distinct('intention')]
+    data = [{'intention':x['intention'], 'questions':None, 'answer':None, 'super_intention':x['super_intention'], 'business':None}
+            for x in qa_db.find()]
+    intention = []
+    for x in data:
+        if x not in intention:
+            intention.append(x)
     for i in intention:
         i['questions'] = list(set(x['question']
             for x in qa_db.find({'intention':i['intention']})))
         data = qa_db.find_one({'intention':i['intention']})
         i['answer'] = data['answer']
-        i['super_intention'] = data['super_intention']
         i['business'] = data['business']
     iqs_db.insert(intention)
 
