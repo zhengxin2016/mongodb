@@ -37,7 +37,13 @@ def add_tree(data, doc, current_node, parent_node):
 
 doc = Document()
 
-add_tree(data, doc, 'nan', doc)
+#add_tree(data, doc, 'nan', doc)
+root = doc.createElement('intention')
+root.setAttribute('name', 'intention')
+doc.appendChild(root)
+for x in data:
+    add_tree(data, doc, x[2], root)
+###
 
 with open('a.xml', 'w') as f:
     f.write(doc.toprettyxml(indent='\t'))
