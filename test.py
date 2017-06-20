@@ -66,6 +66,9 @@ qa_db = db['q_a']
 qa_db.remove()
 fun.write_qa2mongodb(qa_db, raw_db)
 
+sentence_types = fun.read_sentence_type(r'./sentence_type.xls')
+fun.update_sentence_type_2_q_a(qa_db, sentence_types)
+
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
 
