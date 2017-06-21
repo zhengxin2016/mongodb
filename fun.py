@@ -187,9 +187,9 @@ def write_qa2mongodb(qa_db, raw_db):
     qa_db.insert(data)
 
 
-#以{意图，问题列表，回答}为单位存到数据库中
+#以{意图，上级意图，问题列表，回答}为单位存到数据库中
 #输入：
-#输出：无
+#输出：以intention为唯一标识
 def write_iqs2mongodb(intention_db, qa_db):
     intention = [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None,
         'business':None} for x in qa_db.distinct('intention')]
@@ -207,10 +207,10 @@ def write_iqs2mongodb(intention_db, qa_db):
     intention_db.insert(intention)
 
 
+#以super_intention:intention为标识，intention重复
 def write_iqs2mongodb0(intention_db, qa_db):
     data = [{'intention':x['intention'], 'questions':None, 'answer':None,
-        'super_intention':x['super_intention'], 'business':None}
-            for x in qa_db.find()]
+        'super_intention':x['super_intention'], 'business':None} for x in qa_db.find()]
     intention = []
     for x in data:
         if x not in intention:
