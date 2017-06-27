@@ -10,7 +10,6 @@ from pymongo import MongoClient
 #字符清理
 def clean_str(string):
     string = string.strip()
-    #string = string.replace(' ', '')
     string = string.replace(',', '，')
     string = string.replace('.', '。')
     string = string.replace('?', '？')
@@ -245,23 +244,59 @@ def update_sentence_type_2_q_a(qa_db, L):
 
 
 
+Dict = {'问题':'question',
+        '回答':'answer',
+        '合成句':'hechengju',
+        '问题句型':'q_sentence_type',
+        '回答句型':'a_sentence_type',
+        '类型':'type',
+        '业务':'business',
+        '意图':'intention',
+        '上级意图':'super_intention',
+        '场景':'scene',
+        '领域':'domain',
+        '关键词':'key_words',
+        '分词':'seg',
+        '等价描述':'equal_questions',
+        '等价描述（陈述句）':'q1',
+        '等价描述（疑问句）':'q2',
+        }
+
+def proc_equal_questions(d):
+    d['等价描述'] = d['等价描述'].replace(' ', '')
+    d['等价描述'] = d['等价描述'].replace('//', '/')
+    if d['等价描述'][-1] == '/':
+        d['等价描述'] = d['等价描述'][:-1]
+    if d['等价描述'][0] == '/':
+        d['等价描述'] = d['等价描述'][1:1]
+    d['等价描述'] = d['等价描述'].split('/')
+
 def read():
     book = xlrd.open_workbook('./data.xlsx')
     data = []
     head_name = [x.value for x in book.sheets()[0].row(0)]
+    def init_dict():
+        d = {}
+        for i in Dict.values():
+            d[i] = []
+        return d
     for sheet in book.sheets():
-        d = []
+        dia = init_dict()
         for i in range(1, sheet.nrows):
             if sheet.row(i)[0].value == '':
-                if d:
-                    data.append(d)
-                    d = []
+                if dia[Dict[head_name[0]]]:
+                    data.append(dia)
+                    dia = init_dict()
             else:
-                d.append(dict(zip(head_name,
-                    [x.value.strip() for x in sheet.row(i)])))
+                d = dict(zip(head_name, 
+                    [clean_str(x.value) for x in sheet.row(i)]))
+                proc_equal_questions(d)
+                for i in d.keys():
+                   dia[Dict[i]].append(d[i]) 
+    return data
 
+if __name__ == '__main__':
+    data = read()
     print(data[0])
-
-
 
 

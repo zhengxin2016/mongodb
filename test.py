@@ -41,13 +41,14 @@ for i in range(len(D['question'])):
     if D['equal_questions'][i][-1] == '/':
         D['equal_questions'][i] = D['equal_questions'][i][:-1]
     if D['equal_questions'][i][0] == '/':
-        D['equal_questions'][i] = D['equal_questions'][i][:-1]
+        D['equal_questions'][i] = D['equal_questions'][i][1:]
 
 print('read_excel ending...')
 
 print('split dialog starting...')
 #按对话切分列表
 dd = fun.split_dialog(D)
+#print(dd[0])
 #print(len(dd))
 print('split dialog starting...')
 
