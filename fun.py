@@ -190,9 +190,9 @@ def write_qa2mongodb(qa_db, raw_db):
 #以{意图，上级意图，问题列表，回答}为单位存到数据库中
 #输入：
 #输出：以intention为唯一标识
-def write_iqs2mongodb(iqs_db, qa_db):
-    intention = [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None, 'business':None}
-            for x in qa_db.distinct('intention')]
+def write_iqs2mongodb(intention_db, qa_db):
+    intention = [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None,
+        'business':None} for x in qa_db.distinct('intention')]
     for i in intention:
         i['questions'] = list(set(x['question']
             for x in qa_db.find({'intention':i['intention']})))
@@ -204,11 +204,12 @@ def write_iqs2mongodb(iqs_db, qa_db):
             i['super_intention'] = data['super_intention']
         i['answer'] = data['answer']
         i['business'] = data['business']
-    iqs_db.insert(intention)
+    intention_db.insert(intention)
 
 #以super_intention:intention为标识，intention重复
-def write_iqs2mongodb0(iqs_db, qa_db):
-    data = [{'intention':x['intention'], 'questions':None, 'answer':None, 'super_intention':x['super_intention'], 'business':None}
+def write_iqs2mongodb0(intention_db, qa_db):
+    data = [{'intention':x['intention'], 'questions':None, 'answer':None,
+        'super_intention':x['super_intention'], 'business':None}
             for x in qa_db.find()]
     intention = []
     for x in data:
@@ -220,4 +221,35 @@ def write_iqs2mongodb0(iqs_db, qa_db):
         data = qa_db.find_one({'intention':i['intention']})
         i['answer'] = data['answer']
         i['business'] = data['business']
-    iqs_db.insert(intention)
+    intention.insert(intention)
+
+
+#读取句子类型标注结果
+def read_sentence_type(path):
+    L = []
+    book = xlrd.open_workbook(path)
+    sh_names = book.sheet_names()
+    for sh_name in sh_names[:1]:
+        sh = book.sheet_by_name(sh_name)
+        for i in range(1, sh.nrows):
+            t = sh.cell_value(i, 2)
+            if t == '':
+                t = '正反问句'
+            L.append([sh.cell_value(i, 0), sh.cell_value(i, 1), t])
+    return L
+
+#更新q_a中问题类型
+def update_sentence_type_2_q_a(qa_db, L):
+    for x in L:
+        qa_db.update_many({'super_intention':x[0], 'question':x[1]},
+                {'$set':{'q_sentence_type':x[2]}})
+
+
+
+
+
+
+
+
+
+

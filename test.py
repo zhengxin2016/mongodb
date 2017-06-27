@@ -66,6 +66,9 @@ qa_db = db['q_a']
 qa_db.remove()
 fun.write_qa2mongodb(qa_db, raw_db)
 
+sentence_types = fun.read_sentence_type(r'./sentence_type.xls')
+fun.update_sentence_type_2_q_a(qa_db, sentence_types)
+
 #for qa in qa_db.find():
 #    print(qa['_id'], qa['question'])
 
@@ -178,7 +181,10 @@ for business_name in list(set(test_business)):
     f.close()
 
 ######################################
-#[0问题，1上级意图问题，2意图，3业务，4问题句型, 5回答]
+#[0问题，1问题句型]
+test_sentence_type = [x['q_sentence_type'] for x in qa_db.find()]
+test_data = [[x['question'], x['q_sentence_type']] for x in qa_db.find()]
+
 path = r'./sentence_type/'
 if os.path.exists(path):
     shutil.rmtree(path)
@@ -186,7 +192,7 @@ os.mkdir(path)
 for sentence_type_name in list(set(test_sentence_type)):
     f = open(path+sentence_type_name, 'w')
     for i in test_data:
-        if sentence_type_name == i[4]:
+        if sentence_type_name == i[1]:
             f.write(i[0]+'\n')
     f.close()
 
