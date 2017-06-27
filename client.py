@@ -48,6 +48,11 @@ if __name__ == '__main__':
     print('[挂失银行卡] question_list:')
     print(readData.intention_questions('挂失银行卡'))
 
+    print('XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX')
+    data = readData.db.q_a.find({},{'_id':0})
+    for i in data:
+        print(i)
+
 
 
 

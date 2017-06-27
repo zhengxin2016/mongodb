@@ -32,15 +32,14 @@ def proc_punctuation(string):
     return string
 
 #读取excel，每项存到列表中
-def read_excel(D):
-    file_path = r'./data.xlsx'
-    book = xlrd.open_workbook(file_path)
+def read_excel(D, data_path):
+    book = xlrd.open_workbook(data_path)
     sh_names = book.sheet_names()
 
     #Sheets
     for sh_name in sh_names[:21]:
         #print(sh_name)
-        df = pd.read_excel('./data.xlsx', sh_name)
+        df = pd.read_excel(data_path, sh_name)
         for i in df['问题']:
             D['question'].append(str(i))
         for i in df['回答']:
@@ -246,9 +245,22 @@ def update_sentence_type_2_q_a(qa_db, L):
 
 
 
+def read():
+    book = xlrd.open_workbook('./data.xlsx')
+    data = []
+    head_name = [x.value for x in book.sheets()[0].row(0)]
+    for sheet in book.sheets():
+        d = []
+        for i in range(1, sheet.nrows):
+            if sheet.row(i)[0].value == '':
+                if d:
+                    data.append(d)
+                    d = []
+            else:
+                d.append(dict(zip(head_name,
+                    [x.value.strip() for x in sheet.row(i)])))
 
-
-
+    print(data[0])
 
 
 

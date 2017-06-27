@@ -4,6 +4,9 @@ from pymongo import MongoClient
 from xml.dom.minidom import Document
 import operator
 
+'''
+生成意图树
+'''
 
 intention_db = MongoClient('127.0.0.1', 27017).data.intention
 
