@@ -10,47 +10,29 @@ from pymongo import MongoClient
 
 import fun
 
-#读取excel
-D = {'question':[],
-        'answer':[],
-        'q_sentence_type':[],
-        'a_sentence_type':[],
-        'type':[],
-        'business':[],
-        'intention':[],
-        'super_intention':[],
-        'scene':[],
-        'domain':[],
-        'key_words':[],
-        'equal_questions':[]}
+Dict = {'问题':'question',
+        '回答':'answer',
+        '合成句':'synthesis_sentence',
+        '问题句型':'q_sentence_type',
+        '回答句型':'a_sentence_type',
+        '类型':'type',
+        '业务':'business',
+        '意图':'intention',
+        '上级意图':'super_intention',
+        '场景':'scene',
+        '领域':'domain',
+        '关键词':'key_words',
+        '分词':'seg',
+        '等价描述':'equal_questions',
+        '等价描述（陈述句）':'q_statement',
+        '等价描述（疑问句）':'q_question',
+        }
 
+#读取excel
 print('read_excel starting...')
 data_path = r'./data.xlsx'
-fun.read_excel(D, data_path)
-
-#clean_str
-#标点修正，等价描述修正
-for i in range(len(D['question'])):
-    for r in D.values():
-        r[i] = fun.clean_str(r[i])
-    if D['answer'][i] != 'nan':
-        D['answer'][i] = fun.proc_punctuation(D['answer'][i]) 
-    #修正等价描述格式
-    D['equal_questions'][i] = D['equal_questions'][i].replace(' ', '')
-    D['equal_questions'][i] = D['equal_questions'][i].replace('//', '/')
-    if D['equal_questions'][i][-1] == '/':
-        D['equal_questions'][i] = D['equal_questions'][i][:-1]
-    if D['equal_questions'][i][0] == '/':
-        D['equal_questions'][i] = D['equal_questions'][i][1:]
-
+Data = fun.read_excel(data_path, Dict)
 print('read_excel ending...')
-
-print('split dialog starting...')
-#按对话切分列表
-dd = fun.split_dialog(D)
-#print(dd[0])
-#print(len(dd))
-print('split dialog starting...')
 
 #打开Mongodb，集合：‘data’
 client = MongoClient('127.0.0.1', 27017)
@@ -62,7 +44,7 @@ print('raw_data starting...')
 raw_db = db['raw_data']
 #raw_db.remove()
 raw_db.drop()
-fun.write_raw_data2mongodb(raw_db, dd)
+fun.write_raw_data2mongodb(raw_db, Data)
 #print(raw_db.find().count())
 print('raw_data ending...')
 

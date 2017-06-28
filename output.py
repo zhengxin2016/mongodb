@@ -51,7 +51,7 @@ for d in raw_db.find():
         test_intention_answer.append(d['intention_list'][i] + ':' +
             d['answer_list'][i])
         for q in d['question_list'][i]:
-            if d['super_intention_list'][i] == 'nan':
+            if d['super_intention_list'][i] == '':
                 test_data.append([q, q, d['intention_list'][i],
                     d['business_list'][i], d['q_sentence_type_list'][i],
                     d['answer_list'][i]])

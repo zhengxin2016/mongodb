@@ -7,6 +7,7 @@ import numpy as np
 import xlrd
 from pymongo import MongoClient
 
+
 #字符清理
 def clean_str(string):
     string = string.strip()
@@ -16,102 +17,54 @@ def clean_str(string):
     string = string.replace('!', '！')
     return string
 
-#句尾添加标点，修正部分句型的标点
-def proc_punctuation(string):
+#回答句尾添加标点，修正部分句型的标点
+def proc_answer(d):
     p = ['，', '。', '！', '？']
     w = ['呢', '吗', '么']
-    if string[-1] not in p:
-        if string[-1] in w:
-            string = string + '？'
+    if d['回答'][-1] not in p:
+        if d['回答'][-1] in w:
+            d['回答'] = d['回答'] + '？'
         else:
-            string = string + '。'
-    if string[-1] in p:
-        if string[-2] in w:
-            string = string[:-1] + '？'
-    return string
+            d['回答'] = d['回答'] + '。'
+    if d['回答'][-1] in p:
+        if d['回答'][-2] in w:
+            d['回答'] = d['回答'][:-1] + '？'
+#等价描述切分
+def proc_equal_questions(d):
+    d['等价描述'] = d['等价描述'].replace(' ', '')
+    d['等价描述'] = d['等价描述'].replace('//', '/')
+    if d['等价描述'][-1] == '/':
+        d['等价描述'] = d['等价描述'][:-1]
+    if d['等价描述'][0] == '/':
+        d['等价描述'] = d['等价描述'][1:1]
+    d['等价描述'] = d['等价描述'].split('/')
 
-#读取excel，每项存到列表中
-def read_excel(D, data_path):
-    book = xlrd.open_workbook(data_path)
-    sh_names = book.sheet_names()
-
-    #Sheets
-    for sh_name in sh_names[:21]:
-        #print(sh_name)
-        df = pd.read_excel(data_path, sh_name)
-        for i in df['问题']:
-            D['question'].append(str(i))
-        for i in df['回答']:
-            D['answer'].append(str(i))
-        for i in df['问题句型']:
-            D['q_sentence_type'].append(str(i))
-        for i in df['回答句型']:
-            D['a_sentence_type'].append(str(i))
-        for i in df['类型']:
-            D['type'].append(str(i))
-        for i in df['业务']:
-            D['business'].append(str(i))
-        for i in df['意图']:
-            D['intention'].append(str(i))
-        for i in df['上级意图']:
-            D['super_intention'].append(str(i))
-        for i in df['场景']:
-            D['scene'].append(str(i))
-        for i in df['领域']:
-            D['domain'].append(str(i))
-        for i in df['关键词']:
-            D['key_words'].append(str(i))
-        for i in df['等价描述']:
-            D['equal_questions'].append(str(i))
-
-        if D['answer'][-1] != 'nan':
-            D['question'].append('nan')
-            D['answer'].append('nan')
-            D['q_sentence_type'].append('nan')
-            D['a_sentence_type'].append('nan')
-            D['type'].append('nan')
-            D['business'].append('nan')
-            D['intention'].append('nan')
-            D['super_intention'].append('nan')
-            D['scene'].append('nan')
-            D['domain'].append('nan')
-            D['key_words'].append('nan')
-            D['equal_questions'].append('nan')
-
-
-#按对话切分列表
-#输入：Dict
-#输出：raw_data格式
-def split_dialog(D):
-    DD = []
-    start = 0
-    end = 0
-    for q in D['question']:
-        if q == 'nan':
-            e_qs = []
-            i = start
-            while i < end:
-                qs = D['equal_questions'][i].split('/')
-                qs.append(D['question'][i])
-                e_qs.append(qs)
-                i += 1
-            DD.append({'question':D['question'][start:end],
-                'answer':D['answer'][start:end],
-                'q_sentence_type':D['q_sentence_type'][start:end],
-                'a_sentence_type':D['a_sentence_type'][start:end],
-                'type':D['type'][start:end],
-                'business':D['business'][start:end],
-                'intention':D['intention'][start:end],
-                'super_intention':D['super_intention'][start:end],
-                'scene':D['scene'][start:end],
-                'domain':D['domain'][start:end],
-                'key_words':D['key_words'][start:end],
-                'equal_questions':e_qs})
-            start = end + 1
-            end += 1
-            continue
-        end += 1
-    return DD
+def read_excel(filepath, Dict):
+    book = xlrd.open_workbook(filepath)
+    data = []
+    head_name = [x.value for x in book.sheets()[0].row(0)]
+    def init_dict():
+        d = {}
+        for i in Dict.values():
+            d[i] = []
+        return d
+    for sheet in book.sheets():
+        dia = init_dict()
+        for i in range(1, sheet.nrows):
+            if sheet.row(i)[0].value == '':
+                if dia[Dict[head_name[0]]]:
+                    data.append(dia)
+                    dia = init_dict()
+            else:
+                d = dict(zip(head_name, 
+                    [clean_str(x.value) for x in sheet.row(i)]))
+                proc_answer(d)
+                proc_equal_questions(d)
+                for i in d.keys():
+                   dia[Dict[i]].append(d[i]) 
+        if dia[Dict[head_name[0]]]:
+            data.append(dia)
+    return data
 
 
 #以对话为单位存到数据库中
@@ -194,9 +147,9 @@ def write_iqs2mongodb(intention_db, qa_db):
     for i in intention:
         i['questions'] = list(set(x['question']
             for x in qa_db.find({'intention':i['intention']})))
-        data = qa_db.find_one({'intention':i['intention'], 'super_intention':{"$ne":'nan'}})
+        data = qa_db.find_one({'intention':i['intention'], 'super_intention':{"$ne":''}})
         if data is None:
-            i['super_intention'] = 'nan'
+            i['super_intention'] = ''
             data = qa_db.find_one({'intention':i['intention']})
         else:
             i['super_intention'] = data['super_intention']
@@ -244,59 +197,6 @@ def update_sentence_type_2_q_a(qa_db, L):
 
 
 
-Dict = {'问题':'question',
-        '回答':'answer',
-        '合成句':'hechengju',
-        '问题句型':'q_sentence_type',
-        '回答句型':'a_sentence_type',
-        '类型':'type',
-        '业务':'business',
-        '意图':'intention',
-        '上级意图':'super_intention',
-        '场景':'scene',
-        '领域':'domain',
-        '关键词':'key_words',
-        '分词':'seg',
-        '等价描述':'equal_questions',
-        '等价描述（陈述句）':'q1',
-        '等价描述（疑问句）':'q2',
-        }
 
-def proc_equal_questions(d):
-    d['等价描述'] = d['等价描述'].replace(' ', '')
-    d['等价描述'] = d['等价描述'].replace('//', '/')
-    if d['等价描述'][-1] == '/':
-        d['等价描述'] = d['等价描述'][:-1]
-    if d['等价描述'][0] == '/':
-        d['等价描述'] = d['等价描述'][1:1]
-    d['等价描述'] = d['等价描述'].split('/')
-
-def read():
-    book = xlrd.open_workbook('./data.xlsx')
-    data = []
-    head_name = [x.value for x in book.sheets()[0].row(0)]
-    def init_dict():
-        d = {}
-        for i in Dict.values():
-            d[i] = []
-        return d
-    for sheet in book.sheets():
-        dia = init_dict()
-        for i in range(1, sheet.nrows):
-            if sheet.row(i)[0].value == '':
-                if dia[Dict[head_name[0]]]:
-                    data.append(dia)
-                    dia = init_dict()
-            else:
-                d = dict(zip(head_name, 
-                    [clean_str(x.value) for x in sheet.row(i)]))
-                proc_equal_questions(d)
-                for i in d.keys():
-                   dia[Dict[i]].append(d[i]) 
-    return data
-
-if __name__ == '__main__':
-    data = read()
-    print(data[0])
 
 
