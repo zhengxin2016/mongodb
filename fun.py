@@ -39,6 +39,7 @@ def proc_equal_questions(d):
         d['等价描述'] = d['等价描述'][1:1]
     d['等价描述'] = d['等价描述'].split('/')
 
+#读excel数据
 def read_excel(filepath, Dict):
     book = xlrd.open_workbook(filepath)
     data = []
@@ -140,7 +141,7 @@ def write_qa2mongodb(qa_db, raw_db):
 
 #以{意图，上级意图，问题列表，回答}为单位存到数据库中
 #输入：
-#输出：以intention为唯一标识
+#输出：以intention为标识，super_intention:intention不全
 def write_iqs2mongodb(intention_db, qa_db):
     intention = [{'intention':x, 'questions':None, 'answer':None, 'super_intention':None,
         'business':None} for x in qa_db.distinct('intention')]
@@ -157,7 +158,7 @@ def write_iqs2mongodb(intention_db, qa_db):
         i['business'] = data['business']
     intention_db.insert(intention)
 
-#以super_intention:intention为标识，intention重复
+#以super_intention:intention为标识，intention有重复
 def write_iqs2mongodb0(intention_db, qa_db):
     data = [{'intention':x['intention'], 'questions':None, 'answer':None,
         'super_intention':x['super_intention'], 'business':None}
@@ -172,7 +173,7 @@ def write_iqs2mongodb0(intention_db, qa_db):
         data = qa_db.find_one({'intention':i['intention']})
         i['answer'] = data['answer']
         i['business'] = data['business']
-    intention.insert(intention)
+    intention_db.insert(intention)
 
 
 #读取句子类型标注结果

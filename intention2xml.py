@@ -48,7 +48,7 @@ for x in data:
     add_tree(data, doc, x[2], root)
 ###
 
-with open('a.xml', 'w') as f:
+with open('intention.xml', 'w') as f:
     f.write(doc.toprettyxml(indent='\t'))
 
 

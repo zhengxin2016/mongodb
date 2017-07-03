@@ -74,7 +74,7 @@ print('intention starting...')
 intention_db = db['intention']
 #intention_db.remove()
 intention_db.drop()
-fun.write_iqs2mongodb(intention_db, qa_db)
+fun.write_iqs2mongodb0(intention_db, qa_db)
 print('intention ending...')
 
 
