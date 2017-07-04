@@ -121,7 +121,10 @@ if os.path.exists(path):
     shutil.rmtree(path)
 os.mkdir(path)
 for sentence_type_name in list(set(test_sentence_type)):
-    f = open(path+sentence_type_name, 'w')
+    if sentence_type_name == '':
+        f = open(path+'null', 'w')
+    else:
+        f = open(path+sentence_type_name, 'w')
     for i in test_data:
         if sentence_type_name == i[4]:
             f.write(i[0]+'\n')
