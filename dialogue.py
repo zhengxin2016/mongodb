@@ -30,8 +30,11 @@ Dict = {'问题':'question',
 
 #读取excel
 print('read_excel starting...')
-data_path = r'./data.xlsx'
-Data = fun.read_excel(data_path, Dict)
+Data = []
+dirpath = r'./dialogue_data/'
+filelist = os.listdir(dirpath)
+for f in filelist:
+    Data += fun.read_excel(os.path.join(dirpath, f), Dict)
 print('read_excel ending...')
 
 #打开Mongodb，集合：‘data’
