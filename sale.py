@@ -10,10 +10,10 @@ from pymongo import MongoClient
 
 import fun
 
-def read_excel(filepath, index):
+def read_excel(filepath):
     book = xlrd.open_workbook(filepath)
     data = []
-    for sheet in book.sheets()[:index]:
+    for sheet in book.sheets():
         for i in range(sheet.nrows):
             row = sheet.row(i)
             if row[0].value != '' and row[1].value != '':
@@ -31,11 +31,10 @@ def write_sale2mongodb(sale_db, Data):
 #读取excel
 print('read_excel starting...')
 Data = []
-data_path = r'./sale1.xls'
-Data = read_excel(data_path, 3)
-
-data_path = r'./sale2.xls'
-Data += read_excel(data_path, 4)
+dirpath = r'./sale_data/'
+filelist = os.listdir(dirpath)
+for f in filelist:
+    Data += read_excel(os.path.join(dirpath, f))
 print('read_excel ending...')
 
 #打开Mongodb，集合：‘data’
